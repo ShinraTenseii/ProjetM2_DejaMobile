@@ -8,12 +8,44 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
 
+import javax.net.SocketFactory;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLSocket;
+import javax.net.ssl.SSLSocketFactory;
+import javax.net.ssl.TrustManagerFactory;
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.net.InetSocketAddress;
 import java.security.*;
 import java.security.cert.CertificateException;
+import java.security.cert.CertificateFactory;
 import java.util.Enumeration;
+import java.security.cert.Certificate;
 
 public class MainActivity extends AppCompatActivity {
+
+    public static final String CERTIFICATE=("-----BEGIN CERTIFICATE-----\n" +
+            "MIIDBjCCAe4CCQDIKeq+lMpuujANBgkqhkiG9w0BAQsFADBFMQswCQYDVQQGEwJG\n" +
+            "UjETMBEGA1UECAwKU29tZS1TdGF0ZTEhMB8GA1UECgwYSW50ZXJuZXQgV2lkZ2l0\n" +
+            "cyBQdHkgTHRkMB4XDTE5MDIxOTE3NTgyMFoXDTE5MDMyMTE3NTgyMFowRTELMAkG\n" +
+            "A1UEBhMCRlIxEzARBgNVBAgMClNvbWUtU3RhdGUxITAfBgNVBAoMGEludGVybmV0\n" +
+            "IFdpZGdpdHMgUHR5IEx0ZDCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEB\n" +
+            "AKjDFnYmZ2uqOr4YCgDqZpfY3JJwIdHN5it0ekvJF/rJivpjFNrRLE/i8L2eGoVn\n" +
+            "UOlyCA5U+yZ04NQqDG9mPBfZNiPRGVIhz43qsmTKts6dGh4MhUCjzCT/ROz0Wlrd\n" +
+            "IosIWDdBXJJbPMn5ednOdMxP5ggWqyx1B1hQH34RpKNcR5pBdIeoPxP49/PiRsGy\n" +
+            "UYdvQtVUz5GD/CnSZQaIHiPEQjL21eOwjdVrUx1r2SGEhA6a67FKHTkkddA4OiPg\n" +
+            "rqL2o2sAjkxQmAUmmQhKsvr+Ccsn6wUngJSZLrXW+1kV+pFbZLINoQKtrex1DuXA\n" +
+            "UlsEqoDw+CmIjxjDxpJFDDECAwEAATANBgkqhkiG9w0BAQsFAAOCAQEAXxf92JQi\n" +
+            "tTSd/98OgSBq82DV5XZL9cCK2p5Qj1B2zXHRqIN5no54vsnHMFw1GgsIrIBUCK41\n" +
+            "nHxNJUjDUEQT8PtwfzhIuk7dA5a0ZYir7L7dCPrnARgv+ut84u6lhRiv0Sg2VLAK\n" +
+            "QXNFFZ/WdFB+Q1eVUU/kVao54utsGOusPRjm5CLBBYpgSJqgesRIHMLrRo1MEOGB\n" +
+            "MXY/oa/hiB4R3PJiMIhqBsabX9EmbuCh+XaBCQE8+W3VYgda2vRpTSdVjWBV2Net\n" +
+            "LoRsbY1XEqKyVl/dIgZ7WO1arC3b6mQBZopXq4YxPNRq+MMDbPnNREmxGmZPB5qZ\n" +
+            "GEfA+01VDOWEBA==\n" +
+            "-----END CERTIFICATE-----\n");
+
+    public static SSLSocketFactory socketf=null;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -97,6 +129,58 @@ public class MainActivity extends AppCompatActivity {
                 }
 
                 textPrint.setText(text);
+            }
+        });
+
+        Button button_tls = findViewById(R.id.buttonTLS);
+        button_tls.setOnClickListener(new View.OnClickListener(){
+            @Override
+            public void onClick(View view) {
+                final TextView textTLS = findViewById(R.id.textViewTLS);
+                textTLS.setText("Trying...");
+                // Load CAs from an InputStream
+                // (could be from a resource or ByteArrayInputStream or ...)
+                InputStream in=null;
+                try {
+                    CertificateFactory cf = CertificateFactory.getInstance("X.509");
+
+                    Certificate ca;
+
+                    in = new ByteArrayInputStream(CERTIFICATE.getBytes());
+
+                    ca = cf.generateCertificate(in);
+
+                    // Create a KeyStore containing our trusted CAs
+                    String keyStoreType = KeyStore.getDefaultType();
+                    KeyStore keyStore = KeyStore.getInstance(keyStoreType);
+                    keyStore.load(null, null);
+                    keyStore.setCertificateEntry("ca", ca);
+
+                    // Create a TrustManager that trusts the CAs in our KeyStore
+                    String tmfAlgorithm = TrustManagerFactory.getDefaultAlgorithm();
+                    TrustManagerFactory tmf = TrustManagerFactory.getInstance(tmfAlgorithm);
+                    tmf.init(keyStore);
+
+                    // Create an SSLContext that uses our TrustManager
+                    SSLContext context = SSLContext.getInstance("TLS");
+                    context.init(null, tmf.getTrustManagers(), null);
+                    socketf=context.getSocketFactory();
+                    SSLSocket socket = (SSLSocket) socketf.createSocket();
+                    socket.connect(new InetSocketAddress("10.0.2.2",1599), 5000);
+                    socket.startHandshake();
+
+                }catch (Exception e){
+                    e.printStackTrace();
+                    socketf=null;
+                }
+                finally {
+                    if (in!=null)
+                        try {
+                            in.close();
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
+                }
             }
         });
     }
