@@ -1,5 +1,6 @@
 package com.example.thibault.apptest;
 
+import android.os.AsyncTask;
 import android.security.keystore.KeyGenParameterSpec;
 import android.security.keystore.KeyProperties;
 import android.support.v7.app.AppCompatActivity;
@@ -8,18 +9,12 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
 
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.SSLSocket;
 import javax.net.ssl.SSLSocketFactory;
-import javax.net.ssl.TrustManagerFactory;
 import java.io.*;
-import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.security.*;
 import java.security.cert.CertificateException;
-import java.security.cert.CertificateFactory;
 import java.util.Enumeration;
-import java.security.cert.Certificate;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -44,6 +39,8 @@ public class MainActivity extends AppCompatActivity {
             "-----END CERTIFICATE-----\n");
 
     public static SSLSocketFactory socketf=null;
+
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -167,14 +164,7 @@ public class MainActivity extends AppCompatActivity {
                     SSLSocket socket = (SSLSocket) socketf.createSocket();
                     socket.connect(new InetSocketAddress("10.0.2.2",1599), 5000);*/
 
-                Socket socket = null;
-                try {
-                    socket = new Socket("10.0.2.2",1599);
-                    OutputStream output = socket.getOutputStream();
-                    PrintWriter writer = new PrintWriter(output, true);
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
+                new AsyncAction().execute();
                 textTLS.setText("Done");
 
                 /*}catch (Exception e){
@@ -223,6 +213,33 @@ public class MainActivity extends AppCompatActivity {
         return aliases;
     }
 
+    public PrintWriter out;
+    public BufferedReader in ;
 
+    private class AsyncAction extends AsyncTask<String, Void, String> {
+        protected String doInBackground(String... args) {
+            Socket socket = null;
+            try {
+                socket = new Socket("10.0.2.2", 1599);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+
+            final TextView textTLS = findViewById(R.id.textViewTLS);
+            textTLS.setText("mateubsurtonfront");
+            return null;
+        }
+    }
+
+        private String readBuffer() throws IOException {
+            String msg = "";
+
+            while ( in .ready()) {
+                msg = msg + (char) in .read();
+            }
+            //System.out.print(msg);
+            if (msg.indexOf("SNX_COM> ") != -1) return msg.substring(0, msg.indexOf("SNX_COM> "));
+            else return msg;
+        }
 
 }
