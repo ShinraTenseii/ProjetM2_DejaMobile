@@ -8,15 +8,13 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
 
-import javax.net.SocketFactory;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSocket;
 import javax.net.ssl.SSLSocketFactory;
 import javax.net.ssl.TrustManagerFactory;
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.net.InetSocketAddress;
+import java.net.Socket;
 import java.security.*;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
@@ -137,10 +135,11 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View view) {
                 final TextView textTLS = findViewById(R.id.textViewTLS);
+
                 textTLS.setText("Trying...");
                 // Load CAs from an InputStream
                 // (could be from a resource or ByteArrayInputStream or ...)
-                InputStream in=null;
+                /*InputStream in=null;
                 try {
                     CertificateFactory cf = CertificateFactory.getInstance("X.509");
 
@@ -166,10 +165,19 @@ public class MainActivity extends AppCompatActivity {
                     context.init(null, tmf.getTrustManagers(), null);
                     socketf=context.getSocketFactory();
                     SSLSocket socket = (SSLSocket) socketf.createSocket();
-                    socket.connect(new InetSocketAddress("10.0.2.2",1599), 5000);
-                    socket.startHandshake();
+                    socket.connect(new InetSocketAddress("10.0.2.2",1599), 5000);*/
 
-                }catch (Exception e){
+                Socket socket = null;
+                try {
+                    socket = new Socket("10.0.2.2",1599);
+                    OutputStream output = socket.getOutputStream();
+                    PrintWriter writer = new PrintWriter(output, true);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+                textTLS.setText("Done");
+
+                /*}catch (Exception e){
                     e.printStackTrace();
                     socketf=null;
                 }
@@ -180,7 +188,7 @@ public class MainActivity extends AppCompatActivity {
                         } catch (IOException e) {
                             e.printStackTrace();
                         }
-                }
+                }*/
             }
         });
     }
@@ -214,4 +222,7 @@ public class MainActivity extends AppCompatActivity {
         Enumeration<String> aliases = ks.aliases();
         return aliases;
     }
+
+
+
 }
